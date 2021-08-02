@@ -54,47 +54,55 @@ public class GUIManager {
             } else {
                 vaultHook.getEconomy().withdrawPlayer(player, teleportCost);
             }
-        }
+            
+            Location graveLocation = getGraveLocation(itemStack);
 
-        Location graveLocation = getGraveLocation(itemStack);
+            if (graveLocation != null) {
+                Location graveTeleportLocation = graveManager.getTeleportLocation(player, graveLocation);
 
-        if (graveLocation != null) {
-            Location graveTeleportLocation = graveManager.getTeleportLocation(player, graveLocation);
+                if (graveTeleportLocation != null) {
+                    player.teleport(graveTeleportLocation);
 
-            if (graveTeleportLocation != null) {
-                player.teleport(graveTeleportLocation);
+                    GraveInventory graveInventory = graveManager.getGraveInventory(new Location(graveLocation.getWorld(),
+                            graveLocation.getX(), graveLocation.getY() - 1, graveLocation.getZ()));
 
-                GraveInventory graveInventory = graveManager.getGraveInventory(new Location(graveLocation.getWorld(),
-                        graveLocation.getX(), graveLocation.getY() - 1, graveLocation.getZ()));
+                    if (graveInventory != null) {
+                        graveManager.runTeleportCommands(graveInventory, player);
+                    }
 
-                if (graveInventory != null) {
-                    graveManager.runTeleportCommands(graveInventory, player);
+                    String teleportMessage = Objects.requireNonNull(plugin.getConfig()
+                            .getString("settings.teleportMessage"))
+                            .replace("$money", String.valueOf(teleportCost))
+                            .replace("&", "§");
+
+                    if (!teleportMessage.equals("")) {
+                        player.sendMessage(teleportMessage);
+                    }
+
+                    String teleportSound = plugin.getConfig().getString("settings.teleportSound");
+
+                    if (teleportSound != null && !teleportSound.equals("")) {
+                        player.getWorld().playSound(player.getLocation(),
+                                Sound.valueOf(teleportSound.toUpperCase()), 1.0F, 1.0F);
+                    }
+                } else {
+                    String teleportFailedMessage = Objects.requireNonNull(plugin.getConfig()
+                            .getString("settings.teleportFailedMessage"))
+                            .replace("$money", String.valueOf(teleportCost))
+                            .replace("&", "§");
+
+                    if (!teleportFailedMessage.equals("")) {
+                        player.sendMessage(teleportFailedMessage);
+                    }
                 }
+            }
+        } else {
+        	String teleportDisabledMessage = Objects.requireNonNull(plugin.getConfig()
+                    .getString("settings.teleportDisabledMessage"))
+                    .replace("&", "§");
 
-                String teleportMessage = Objects.requireNonNull(plugin.getConfig()
-                        .getString("settings.teleportMessage"))
-                        .replace("$money", String.valueOf(teleportCost))
-                        .replace("&", "§");
-
-                if (!teleportMessage.equals("")) {
-                    player.sendMessage(teleportMessage);
-                }
-
-                String teleportSound = plugin.getConfig().getString("settings.teleportSound");
-
-                if (teleportSound != null && !teleportSound.equals("")) {
-                    player.getWorld().playSound(player.getLocation(),
-                            Sound.valueOf(teleportSound.toUpperCase()), 1.0F, 1.0F);
-                }
-            } else {
-                String teleportFailedMessage = Objects.requireNonNull(plugin.getConfig()
-                        .getString("settings.teleportFailedMessage"))
-                        .replace("$money", String.valueOf(teleportCost))
-                        .replace("&", "§");
-
-                if (!teleportFailedMessage.equals("")) {
-                    player.sendMessage(teleportFailedMessage);
-                }
+            if (!teleportDisabledMessage.equals("")) {
+                player.sendMessage(teleportDisabledMessage);
             }
         }
     }

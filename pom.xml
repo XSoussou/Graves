@@ -41,7 +41,7 @@
       <groupId>com.github.MilkBowl</groupId>
       <artifactId>VaultAPI</artifactId>
       <version>1.7</version>
-      <scope>compile</scope>
+      <scope>provided</scope>
     </dependency>
     
     <dependency>
@@ -70,25 +70,6 @@
         <configuration>
           <release>16</release>
         </configuration>
-      </plugin>
-      
-      <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.4</version>
-        
-        <executions>
-          <execution>
-            <phase>package</phase>
-            
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            
-            <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
