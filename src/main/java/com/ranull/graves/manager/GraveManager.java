@@ -393,7 +393,7 @@ public class GraveManager {
         }
 
         if (player.getLocation().distance(location) >= plugin.getConfig().getInt("settings.maxSearch")) {
-            if (player.getLocation().getY() > 0 && player.getLocation().getY() < 256) {
+            if (player.getLocation().getY() > getMinHeight(location) && player.getLocation().getY() < getMaxHeight(location)) {
                 location = player.getLocation();
             }
         }
@@ -607,7 +607,7 @@ public class GraveManager {
     public Location getPlaceLocation(Location location) {
         location = roundLocation(location);
 
-        if (location.getY() < 0 || location.getY() > 256) {
+        if (location.getY() < getMinHeight(location) || location.getY() > getMaxHeight(location)) {
             if (plugin.getConfig().getBoolean("settings.placeVoid")) {
                 Location topLocation = getTop(location);
 
@@ -716,7 +716,7 @@ public class GraveManager {
 
     public Location getHighestBlock(Location location) {
         location = location.clone();
-        location.setY(256);
+        location.setY(getMaxHeight(location));
 
         return getGround(location);
     }
@@ -724,8 +724,8 @@ public class GraveManager {
     public Location getGround(Location location) {
         Block block = location.getBlock();
 
-        int max = 0;
-        while (max <= 256) {
+        int max = getMinHeight(location);
+        while (max <= getMaxHeight(location)) {
             if (!dataManager.graveReplace().contains(block.getType()) && !isAir(block.getType())) {
                 return block.getLocation().add(0, 1, 0);
             }
@@ -738,12 +738,12 @@ public class GraveManager {
     }
 
     public Location getTop(Location location) {
-        location.setY(256);
+        location.setY(getMaxHeight(location));
 
         Block block = location.getBlock();
 
-        int max = 0;
-        while (max <= 256) {
+        int max = getMinHeight(location);
+        while (max <= getMaxHeight(location)) {
             if (dataManager.graveReplace().contains(block.getType()) || !isAir(block.getType())) {
                 return block.getLocation().add(0, 1, 0);
             }
@@ -759,8 +759,8 @@ public class GraveManager {
     public Location getLavaTop(Location location) {
         Block block = location.getBlock();
 
-        int max = 0;
-        while (max <= 256) {
+        int max = getMinHeight(location);
+        while (max <= getMaxHeight(location)) {
             if ((dataManager.graveReplace().contains(block.getType()) ||
                     isAir(block.getType())) && block.getType() != Material.LAVA) {
                 return block.getLocation();
@@ -774,13 +774,13 @@ public class GraveManager {
     }
 
     public Location getVoid(Location location) {
-        location.setY(0);
+        location.setY(getMinHeight(location));
 
         Block block = location.getBlock();
 
-        int max = 0;
+        int max = getMinHeight(location);
 
-        while (max <= 256) {
+        while (max <= getMaxHeight(location)) {
             if (dataManager.graveReplace().contains(block.getType())) {
                 return block.getLocation().add(0, 1, 0);
             }
@@ -1823,5 +1823,13 @@ public class GraveManager {
         }
 
         return StringUtils.normalizeSpace(timeDay + timeHour + timeMinute + timeSecond);
+    }
+    
+    public int getMinHeight(Location loc) {
+    	return loc.getWorld().getMinHeight();
+    }
+    
+    public int getMaxHeight(Location loc) {
+    	return loc.getWorld().getMaxHeight();
     }
 }
