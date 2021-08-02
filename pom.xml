@@ -3,9 +3,9 @@
   
   <groupId>com.rngservers</groupId>
   <artifactId>Graves</artifactId>
-  <version>3.8</version>
+  <version>3.9</version>
   <packaging>jar</packaging>
-  <name>Graves</name>
+  <name>GravesBugfix</name>
   <description>Full featured lightweight death chest plugin.</description>
   
   <properties>
@@ -54,6 +54,7 @@
   
   <build>
     <defaultGoal>clean package</defaultGoal>
+    <finalName>${project.name}-${project.version}</finalName>
     
     <resources>
       <resource>
