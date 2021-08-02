@@ -7,6 +7,8 @@
 
 <p align="center">The <b>ULTIMATE</b> full featured light weight death chest plugin / player grave plugin! Every feature you could ever need and more! While still being lightweight and small.</p>
 
+<p><b>NOTE: This repository is a fork, the original can be found at https://gitlab.com/ranull/minecraft/graves/</b></p>
+
 <b>Features:</b>
 
 <ul>
@@ -42,10 +44,10 @@
 <b>Links:</b>
 <ul>
 	<li><b>Spigot:</b> https://www.spigotmc.org/resources/graves.74208/</li>
-	<li><b>GitLab:</b> https://gitlab.com/8494742733/graves/</li>
+	<li><b>GitLab:</b> https://gitlab.com/ranull/minecraft/graves/</li>
 </ul>
 
-<b>Dontaion:</b>
+<b>Donation (towards the original author):</b>
 <ul>
 	<li><b>Bitcoin:</b> bc1qfkz5d8exrpk6m7qzdrd2zuw5hnnutw6ez9ztjp</li>
 	<li><b>Monero:</b> 44aFzuGmDVxi2tSXvzgzjejaCDg5F79Zr7JnLfUgZcP2K91ZrTDHZFYFUWeZqsMwr7Vw2h76jsQjgMKPKdvxXvSFLo35Q76</li>
