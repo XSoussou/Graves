@@ -938,11 +938,17 @@ public class GraveManager {
         if (plugin.getConfig().getBoolean("settings.hologram")) {
             if (!graveInventory.getHolograms().isEmpty()) {
                 for (ConcurrentMap.Entry<UUID, Integer> entry : graveInventory.getHolograms().entrySet()) {
-                    ArmorStand armorStand = (ArmorStand) plugin.getServer().getEntity(entry.getKey());
+                    plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
 
-                    if (armorStand != null) {
-                        armorStand.setCustomName(parseHologram(entry.getValue(), graveInventory));
-                    }
+                            ArmorStand armorStand = (ArmorStand) plugin.getServer().getEntity(entry.getKey());
+
+                            if (armorStand != null) {
+                                armorStand.setCustomName(parseHologram(entry.getValue(), graveInventory));
+                            }
+                        }
+                    });
                 }
             }
         }
@@ -1161,26 +1167,31 @@ public class GraveManager {
     public void cleanupBrokenHolograms() {
         if (!plugin.getServer().getWorlds().isEmpty()) {
             for (World world : plugin.getServer().getWorlds()) {
-                if (!world.getEntities().isEmpty()) {
-                    Iterator<Entity> iterator = world.getEntities().iterator();
+            	plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                    	if (!world.getEntities().isEmpty()) {
+                            Iterator<Entity> iterator = world.getEntities().iterator();
 
-                    while (iterator.hasNext()) {
-                        Object object = iterator.next();
+                            while (iterator.hasNext()) {
+                                Object object = iterator.next();
 
-                        if (object != null && object instanceof ArmorStand) {
-                            ArmorStand armorStand = (ArmorStand) object;
-                            GraveInventory graveInventory = getGraveFromHologram(armorStand);
+                                if (object != null && object instanceof ArmorStand) {
+                                    ArmorStand armorStand = (ArmorStand) object;
+                                    GraveInventory graveInventory = getGraveFromHologram(armorStand);
 
-                            if (graveInventory == null) {
-                                for (String tag : armorStand.getScoreboardTags()) {
-                                    if (tag.contains("graveHologram")) {
-                                        armorStand.remove();
+                                    if (graveInventory == null) {
+                                        for (String tag : armorStand.getScoreboardTags()) {
+                                            if (tag.contains("graveHologram")) {
+                                                armorStand.remove();
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+            	});
             }
         }
     }
