@@ -1,4 +1,4 @@
-name: ${project.name}
+name: Graves
 description: ${project.description}
 version: ${project.version}
 main: com.ranull.graves.Graves
