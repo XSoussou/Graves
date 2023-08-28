@@ -1,286 +1,140 @@
 package com.ranull.graves.manager;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
 import com.ranull.graves.Graves;
-import com.ranull.graves.hooks.VaultHook;
-import com.ranull.graves.inventory.GraveInventory;
-import com.ranull.graves.inventory.GraveListInventory;
-import org.bukkit.*;
+import com.ranull.graves.inventory.GraveList;
+import com.ranull.graves.inventory.GraveMenu;
+import com.ranull.graves.type.Grave;
+import com.ranull.graves.util.InventoryUtil;
+import com.ranull.graves.util.StringUtil;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.inventory.Inventory;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
-public class GUIManager {
-    private Graves plugin;
-    private GraveManager graveManager;
-    private VaultHook vaultHook;
+public final class GUIManager {
+    private final Graves plugin;
 
-    public GUIManager(Graves plugin, GraveManager graveManager, VaultHook vaultHook) {
+    public GUIManager(Graves plugin) {
         this.plugin = plugin;
-        this.graveManager = graveManager;
-        this.vaultHook = vaultHook;
     }
 
-    public void teleportGrave(Player player, ItemStack itemStack) {
-        double teleportCost = graveManager.getTeleportCost(player);
-        
-        if (vaultHook != null && player.getUniqueId()
-                .equals(UUID.fromString(Objects.requireNonNull(Objects.requireNonNull(itemStack.getItemMeta())
-                        .getPersistentDataContainer().get(new NamespacedKey(plugin, "graveOwner"),
-                                PersistentDataType.STRING))))) {
-            double playerBalance = vaultHook.getEconomy().getBalance(player);
+    public void openGraveList(Entity entity) {
+        openGraveList(entity, entity.getUniqueId(), true);
+    }
 
-            if (playerBalance < teleportCost) {
-                String notEnoughMoneyMessage = Objects.requireNonNull(plugin.getConfig()
-                        .getString("settings.notEnoughMoneyMessage"))
-                        .replace("$money", String.valueOf(teleportCost))
-                        .replace("&", "§");
+    public void openGraveList(Entity entity, boolean sound) {
+        openGraveList(entity, entity.getUniqueId(), sound);
+    }
 
-                if (!notEnoughMoneyMessage.equals("")) {
-                    player.sendMessage(notEnoughMoneyMessage);
-                }
+    public void openGraveList(Entity entity, Entity entity2) {
+        openGraveList(entity, entity2.getUniqueId(), true);
+    }
 
-                return;
-            } else {
-                vaultHook.getEconomy().withdrawPlayer(player, teleportCost);
-            }
-            
-            Location graveLocation = getGraveLocation(itemStack);
+    public void openGraveList(Entity entity, UUID uuid) {
+        openGraveList(entity, uuid, true);
+    }
 
-            if (graveLocation != null) {
-                Location graveTeleportLocation = graveManager.getTeleportLocation(player, graveLocation);
+    @SuppressWarnings("ConstantConditions")
+    public void refreshMenus() {
+        if (plugin.isEnabled()) {
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                if (player.getOpenInventory() != null) { // Mohist, might return null even when Bukkit shouldn't.
+                    Inventory inventory = player.getOpenInventory().getTopInventory();
 
-                if (graveTeleportLocation != null) {
-                    player.teleport(graveTeleportLocation);
-
-                    GraveInventory graveInventory = graveManager.getGraveInventory(new Location(graveLocation.getWorld(),
-                            graveLocation.getX(), graveLocation.getY() - 1, graveLocation.getZ()));
-
-                    if (graveInventory != null) {
-                        graveManager.runTeleportCommands(graveInventory, player);
-                    }
-
-                    String teleportMessage = Objects.requireNonNull(plugin.getConfig()
-                            .getString("settings.teleportMessage"))
-                            .replace("$money", String.valueOf(teleportCost))
-                            .replace("&", "§");
-
-                    if (!teleportMessage.equals("")) {
-                        player.sendMessage(teleportMessage);
-                    }
-
-                    String teleportSound = plugin.getConfig().getString("settings.teleportSound");
-
-                    if (teleportSound != null && !teleportSound.equals("")) {
-                        player.getWorld().playSound(player.getLocation(),
-                                Sound.valueOf(teleportSound.toUpperCase()), 1.0F, 1.0F);
-                    }
-                } else {
-                    String teleportFailedMessage = Objects.requireNonNull(plugin.getConfig()
-                            .getString("settings.teleportFailedMessage"))
-                            .replace("$money", String.valueOf(teleportCost))
-                            .replace("&", "§");
-
-                    if (!teleportFailedMessage.equals("")) {
-                        player.sendMessage(teleportFailedMessage);
+                    if (inventory.getHolder() instanceof GraveList) {
+                        plugin.getGUIManager().setGraveListItems(inventory,
+                                ((GraveList) inventory.getHolder()).getUUID());
+                    } else if (inventory.getHolder() instanceof GraveMenu) {
+                        plugin.getGUIManager().setGraveMenuItems(inventory,
+                                ((GraveMenu) inventory.getHolder()).getGrave());
                     }
                 }
-            }
-        } else {
-        	String teleportDisabledMessage = Objects.requireNonNull(plugin.getConfig()
-                    .getString("settings.teleportDisabledMessage"))
-                    .replace("&", "§");
-
-            if (!teleportDisabledMessage.equals("")) {
-                player.sendMessage(teleportDisabledMessage);
             }
         }
     }
 
-    public Location getGraveLocation(ItemStack itemStack) {
-        NamespacedKey key = new NamespacedKey(plugin, "graveLocation");
+    public void openGraveList(Entity entity, UUID uuid, boolean sound) {
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            List<String> permissionList = plugin.getPermissionList(player);
+            List<Grave> playerGraveList = plugin.getGraveManager().getGraveList(uuid);
 
-        String[] cords = Objects.requireNonNull(Objects.requireNonNull(itemStack.getItemMeta()).getPersistentDataContainer()
-                .get(key, PersistentDataType.STRING)).split("#");
+            if (!playerGraveList.isEmpty()) {
+                GraveList graveList = new GraveList(uuid, playerGraveList);
+                Inventory inventory = plugin.getServer().createInventory(graveList,
+                        InventoryUtil.getInventorySize(playerGraveList.size()),
+                        StringUtil.parseString(plugin.getConfig("gui.menu.list.title", player, permissionList)
+                                .getString("gui.menu.list.title", "Graves Main Menu"), player, plugin));
 
-        try {
-            World world = plugin.getServer().getWorld(cords[0]);
+                setGraveListItems(inventory, playerGraveList);
+                graveList.setInventory(inventory);
+                player.openInventory(graveList.getInventory());
 
-            double x = Double.parseDouble(cords[1]);
-            double y = Double.parseDouble(cords[2]);
-            double z = Double.parseDouble(cords[3]);
-
-            return new Location(world, x, y, z);
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
-    }
-
-    public void openGraveGUI(Player player) {
-        openGraveGUI(player, player);
-    }
-
-    public void openGraveGUI(Player player, OfflinePlayer otherPlayer) {
-        List<ItemStack> graveItems = getGraveListItems(otherPlayer);
-
-        if (graveItems.size() == 0) {
-            if (player.equals(otherPlayer)) {
-                String guiEmpty = Objects.requireNonNull(plugin.getConfig().getString("settings.guiEmpty"))
-                        .replace("&", "§");
-
-                if (!guiEmpty.equals("")) {
-                    player.sendMessage(guiEmpty);
+                if (sound) {
+                    plugin.getEntityManager().playPlayerSound("sound.menu-open", player, permissionList);
                 }
             } else {
-                player.sendMessage(ChatColor.DARK_GRAY + "[" + ChatColor.GRAY + "Graves" + ChatColor.GRAY + "] "
-                        + ChatColor.GRAY + otherPlayer.getName() + ChatColor.RESET + " does not have any graves!");
+                plugin.getEntityManager().sendMessage("message.empty", player, permissionList);
             }
-
-            return;
         }
-
-        String guiName = Objects.requireNonNull(plugin.getConfig().getString("settings.guiTitle"))
-                .replace("$entity", Objects.requireNonNull(otherPlayer.getName()))
-                .replace("$player", otherPlayer.getName())
-                .replace("&", "§");
-
-        GraveListInventory graveListInventory = new GraveListInventory(guiName, graveItems,
-                GraveManager.getInventorySize(graveItems.size()));
-
-        player.openInventory(graveListInventory.getInventory());
     }
 
-    public List<ItemStack> getGraveListItems(OfflinePlayer player) {
-        List<ItemStack> itemList = new ArrayList<>();
-
-        for (ConcurrentMap.Entry<Location, GraveInventory> entry :
-                graveManager.getPlayerGraves(player.getUniqueId()).entrySet()) {
-            GraveInventory graveInventory = entry.getValue();
-
-            Material graveMaterial = Material.matchMaterial(Objects.requireNonNull(
-                    plugin.getConfig().getString("settings.block")));
-
-            if (graveMaterial == null || graveMaterial == Material.AIR) {
-                graveMaterial = Material.PLAYER_HEAD;
-            }
-
-            ItemStack itemStack = new ItemStack(graveMaterial);
-            ItemMeta itemMeta = itemStack.getItemMeta();
-
-            if (itemMeta != null) {
-                if (graveMaterial == Material.PLAYER_HEAD && itemMeta instanceof SkullMeta) {
-                    String headSkin = plugin.getConfig().getString("settings.headSkin");
-
-                    if (headSkin != null) {
-                        int headSkinType = plugin.getConfig().getInt("settings.headSkinType");
-
-                        SkullMeta skullMeta = (SkullMeta) itemMeta;
-
-                        if (headSkinType == 0) {
-                            if (graveInventory.getPlayer() != null) {
-                                skullMeta.setOwningPlayer(graveInventory.getPlayer());
-                                itemStack.setItemMeta(skullMeta);
-                            }
-                        } else if (headSkinType == 1) {
-                            addSkullItemStackTexture(itemStack, headSkin);
-                            itemMeta = itemStack.getItemMeta();
-                        } else if (headSkinType == 2) {
-                            if (graveManager.getGraveHead() != null && headSkin.length() <= 16) {
-                                skullMeta.setOwningPlayer(graveManager.getGraveHead());
-                                itemStack.setItemMeta(skullMeta);
-                            }
-                        }
-                    }
-                }
-
-                List<String> loreList = new ArrayList<>();
-                List<String> loreLines = plugin.getConfig().getStringList("settings.guiLore");
-
-                for (String lore : loreLines) {
-                    String line = ChatColor.GRAY + lore.replace("$location", "LOC")
-                            .replace("$item", String.valueOf(graveInventory.getItemAmount()))
-                            .replace("$protect", graveManager.parseProtect(graveInventory))
-                            .replace("&", "§");
-
-                    if (graveInventory.getExperience() > 0) {
-                        line = line.replace("$level", graveManager.getLevelFromExp(
-                                graveInventory.getExperience()));
-                        line = line.replace("$xp", String.valueOf(graveInventory.getExperience()));
-                    } else {
-                        line = line.replace("$level", "0");
-                        line = line.replace("$xp", "0");
-                    }
-
-                    line = line.replace("$world", graveInventory.getLocation().getWorld().getName())
-                            .replace("$x", String.valueOf(graveInventory.getLocation().getBlockX()))
-                            .replace("$y", String.valueOf(graveInventory.getLocation().getBlockY()))
-                            .replace("$z", String.valueOf(graveInventory.getLocation().getBlockZ()));
-
-                    loreList.add(line);
-                }
-
-                String guiGrave = Objects.requireNonNull(plugin.getConfig().getString("settings.guiGrave"))
-                        .replace("$world", graveInventory.getLocation().getWorld().getName())
-                        .replace("$x", String.valueOf(graveInventory.getLocation().getBlockX()))
-                        .replace("$y", String.valueOf(graveInventory.getLocation().getBlockY()))
-                        .replace("$z", String.valueOf(graveInventory.getLocation().getBlockZ()))
-                        .replace("&", "§");
-
-                itemMeta.setDisplayName(guiGrave);
-                itemMeta.setLore(loreList);
-
-                String locationValue = Objects.requireNonNull(graveInventory.getLocation().getWorld()).getName() + "#"
-                        + graveInventory.getLocation().getX() + "#" + graveInventory.getLocation().getY() +
-                        "#" + graveInventory.getLocation().getZ();
-
-                itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveLocation"),
-                        PersistentDataType.STRING, locationValue);
-
-                itemMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "graveOwner"),
-                        PersistentDataType.STRING, graveInventory.getPlayer().getUniqueId().toString());
-
-                itemStack.setItemMeta(itemMeta);
-            }
-
-            itemList.add(itemStack);
-        }
-
-        return itemList;
+    public void setGraveListItems(Inventory inventory, UUID uuid) {
+        setGraveListItems(inventory, plugin.getGraveManager().getGraveList(uuid));
     }
 
-    public static ItemStack addSkullItemStackTexture(ItemStack itemStack, String base64) {
-        if (itemStack.getType() != Material.PLAYER_HEAD) {
-            return itemStack;
+    public void setGraveListItems(Inventory inventory, List<Grave> graveList) {
+        inventory.clear();
+
+        int count = 1;
+
+        for (Grave grave : graveList) {
+            inventory.addItem(plugin.getItemStackManager().createGraveListItemStack(count, grave));
+            count++;
         }
-        
-        SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
+    }
 
-        GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+    public void openGraveMenu(Entity entity, Grave grave) {
+        openGraveMenu(entity, grave, true);
+    }
 
-        profile.getProperties().put("textures", new Property("textures", base64));
+    public void openGraveMenu(Entity entity, Grave grave, boolean sound) {
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            GraveMenu graveMenu = new GraveMenu(grave);
+            String title = StringUtil.parseString(plugin.getConfig("gui.menu.grave.title", player, grave.getPermissionList())
+                    .getString("gui.menu.grave.title", "Grave"), player, plugin);
+            Inventory inventory = plugin.getServer().createInventory(graveMenu, InventoryUtil.getInventorySize(5), title);
 
-        try {
-            Field profileField = skullMeta.getClass().getDeclaredField("profile");
+            setGraveMenuItems(inventory, grave);
+            graveMenu.setInventory(inventory);
+            player.openInventory(graveMenu.getInventory());
 
-            profileField.setAccessible(true);
-
-            profileField.set(skullMeta, profile);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException exception) {
-            exception.printStackTrace();
+            if (sound) {
+                plugin.getEntityManager().playPlayerSound("sound.menu-open", player, grave);
+            }
         }
+    }
 
-        itemStack.setItemMeta(skullMeta);
+    public void setGraveMenuItems(Inventory inventory, Grave grave) {
+        inventory.clear();
 
-        return itemStack;
+        ConfigurationSection configurationSection = plugin.getConfig("gui.menu.grave.slot", grave)
+                .getConfigurationSection("gui.menu.grave.slot");
+
+        if (configurationSection != null) {
+            for (String string : configurationSection.getKeys(false)) {
+                try {
+                    int slot = Integer.parseInt(string);
+
+                    inventory.setItem(slot, plugin.getItemStackManager().createGraveMenuItemStack(slot, grave));
+                } catch (NumberFormatException exception) {
+                    plugin.debugMessage(string + " is not an int", 1);
+                }
+            }
+        }
     }
 }
