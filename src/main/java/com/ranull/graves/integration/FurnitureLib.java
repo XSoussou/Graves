@@ -11,7 +11,7 @@ import de.Ste3et_C0st.FurnitureLib.Crafting.Project;
 import de.Ste3et_C0st.FurnitureLib.Utilitis.LocationUtil;
 import de.Ste3et_C0st.FurnitureLib.main.FurniturePlugin;
 import de.Ste3et_C0st.FurnitureLib.main.ObjectID;
-import de.Ste3et_C0st.FurnitureLib.main.entity.fEntity;
+import de.Ste3et_C0st.FurnitureLib.main.entity.fContainerEntity;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -89,7 +89,7 @@ public final class FurnitureLib extends EntityDataManager {
 
                 if (plugin.getConfig("furniturelib.head.replace", grave)
                         .getBoolean("furniturelib.head.replace")) {
-                    objectID.getPacketList().forEach((fEntity) -> setSkull(fEntity, grave));
+                    objectID.getPacketList().forEach((fEntity) -> setSkull((fContainerEntity) fEntity, grave));
                 }
 
                 furnitureLib.getFurnitureManager().addObjectID(objectID);
@@ -142,7 +142,7 @@ public final class FurnitureLib extends EntityDataManager {
         }
     }
 
-    private void setSkull(fEntity fEntity, Grave grave) {
+    private void setSkull(fContainerEntity fEntity, Grave grave) {
         List<String> materialList = plugin.getConfig("furniturelib.head.material", grave)
                 .getStringList("furniturelib.head.material");
         ItemStack itemStack = plugin.getCompatibility().getSkullItemStack(grave, plugin);
