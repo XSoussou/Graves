@@ -321,8 +321,8 @@ public class Graves extends JavaPlugin {
 
                 if (latestVersion != null) {
                     try {
-                        double pluginVersion = Double.parseDouble(getDescription().getVersion());
-                        double pluginVersionLatest = Double.parseDouble(latestVersion);
+                        double pluginVersion = getVersionAsNumber(getDescription().getVersion());
+                        double pluginVersionLatest = getVersionAsNumber(latestVersion);
 
                         if (pluginVersion < pluginVersionLatest) {
                             getLogger().info("Update: Outdated version detected " + pluginVersion
@@ -339,6 +339,13 @@ public class Graves extends JavaPlugin {
                 }
             });
         }
+    }
+
+    private double getVersionAsNumber(String version) throws NumberFormatException {
+        String integerPart = version.split("\\.")[0];
+        String decimalPart = version.split("-")[0].substring(integerPart.length()).replace(".", "");
+
+        return Double.parseDouble(integerPart + "." + decimalPart);
     }
 
     private void compatibilityChecker() {
