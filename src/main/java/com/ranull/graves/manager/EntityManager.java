@@ -317,6 +317,10 @@ public final class EntityManager extends EntityDataManager {
                 string = plugin.getConfig(string, entity.getType(), permissionList).getString(string);
             }
 
+            if(string.equals("")) {
+                return;
+            }
+
             String prefix = plugin.getConfig("message.prefix", entity.getType(), permissionList)
                     .getString("message.prefix");
 
