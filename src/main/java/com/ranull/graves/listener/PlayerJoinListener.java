@@ -25,8 +25,8 @@ public class PlayerJoinListener implements Listener {
 
                 if (latestVersion != null) {
                     try {
-                        double pluginVersion = Double.parseDouble(plugin.getVersion());
-                        double pluginVersionLatest = Double.parseDouble(latestVersion);
+                        double pluginVersion = Graves.getVersionAsNumber(plugin.getVersion());
+                        double pluginVersionLatest = Graves.getVersionAsNumber(latestVersion);
 
                         if (pluginVersion < pluginVersionLatest) {
                             player.sendMessage(ChatColor.RED + "☠" + ChatColor.DARK_GRAY + " » " + ChatColor.RESET
